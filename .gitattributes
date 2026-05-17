@@ -1,2 +1,14 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Explicit LF for known text formats — silences LF→CRLF warnings on Windows
+# and keeps diffs stable across platforms.
+*.md      text eol=lf
+*.json    text eol=lf
+*.ts      text eol=lf
+*.js      text eol=lf
+*.svelte  text eol=lf
+*.html    text eol=lf
+*.css     text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf

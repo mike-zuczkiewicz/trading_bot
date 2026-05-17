@@ -37,8 +37,11 @@ export default defineConfig(
 		}
 	},
 	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
+		// Production code should use console.warn / console.error only;
+		// console.log emits a lint warning to prevent leaking order IDs,
+		// account numbers, etc. into the browser console.
+		rules: {
+			'no-console': ['warn', { allow: ['warn', 'error'] }]
+		}
 	}
 );
