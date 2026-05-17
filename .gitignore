@@ -164,10 +164,6 @@ $RECYCLE.BIN/
 # Bot logs
 bot.log
 
-# Migration scratch — systemd unit backup pulled off the VPS during bot import.
-# Reference only; delete after the VPS deployment is switched to git pull.
-trading-bot.service.bak
-
 # CLAUDE.md is intentionally tracked in the repository, so that it can be updated and committed.
 .claude/settings.local.json
  

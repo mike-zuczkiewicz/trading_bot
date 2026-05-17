@@ -6,6 +6,7 @@
 - ✅ Phase 1: Infrastructure (Alpaca connected, VPS provisioned, bot scaffold)
 - ✅ Phase 2: Reboot-proof (systemd, .env, SSH from Windows)
 - ✅ Security hardening (UFW, Fail2ban, non-root user, root SSH disabled)
+- ✅ Bot migrated into git (2026-05-17) — VPS deploys via `sudo git -C /root/trading_bot pull && sudo systemctl restart trading-bot.service`
 
 ### Pending
 - [ ] Mac SSH as mike

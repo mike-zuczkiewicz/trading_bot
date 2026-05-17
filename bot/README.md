@@ -14,21 +14,20 @@ bot/
 └── strategy.py        cup-with-handle + CAN SLIM signal logic
 ```
 
-## Deploy workflow (post-migration)
+## Deploy workflow
 
-On the VPS:
+SSH to the VPS as `mike` (key auth — see `.claude/CLAUDE.md` §SSH Access), then:
 
 ```sh
-cd /root/trading_bot
-git pull
+sudo git -C /root/trading_bot pull
 sudo systemctl restart trading-bot.service
 ```
 
-That's it. No more scp.
+The repo lives under `/root/` (mode 700) so `mike` can't `cd` into it; `git -C <path>` works around that without needing `sudo -i`.
 
-## One-time migration runbook
+## Historical: one-time migration runbook
 
-The bot currently lives at `/root/trading-bot/` (hyphen) on the VPS and is **not** in git. Run these once to move it into `bot/` of this repo and switch deployment to `git pull`.
+The bot used to live at `/root/trading-bot/` (hyphen) on the VPS and was **not** in git. Migrated 2026-05-17 — kept here for reference only. The current deploy workflow is the section above.
 
 ### Step 1 — pull the current bot source to your local repo
 
