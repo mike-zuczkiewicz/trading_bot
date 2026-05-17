@@ -4,7 +4,7 @@
 
 ### Completed
 - ✅ Phase 1: Infrastructure (Alpaca connected, VPS provisioned, bot scaffold)
-- ✅ Phase 2: Reboot-proof (systemd, .env, SSH from Mac+Windows)
+- ✅ Phase 2: Reboot-proof (systemd, .env, SSH from Windows)
 - ✅ Security hardening (UFW, Fail2ban, non-root user, root SSH disabled)
 
 ### Pending
