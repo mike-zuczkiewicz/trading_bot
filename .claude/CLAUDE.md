@@ -99,6 +99,27 @@ When working on Svelte/SvelteKit code, use these tools in order:
 
 ---
 
+## Audit Trail (where parameter changes are logged)
+- Location: `/root/trading-bot/audit.log` on the VPS (append-only)
+- Format: JSON Lines (one JSON object per line), schema:
+  ```
+  {
+    "timestamp": "<ISO-8601 with TZ>",
+    "actor": "claude" | "mike" | "system",
+    "change_type": "param_update" | "position_add" | "manual_override" | "envelope_action",
+    "target": "<param name or position symbol>",
+    "old_value": <any>,
+    "new_value": <any>,
+    "reason": "<free-text>",
+    "envelope_rule_satisfied": <object | null>
+  }
+  ```
+- Rotation: weekly to `audit-YYYY-WW.log.gz`
+- Retention: 1 year minimum
+- Read access: Claude, Mike. Write access: bot process only.
+
+---
+
 ## Hard Limits (Never Change)
 - Claude never executes trades directly
 - Bot never exceeds preset parameters without code change
