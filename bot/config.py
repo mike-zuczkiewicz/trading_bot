@@ -19,22 +19,13 @@ WATCHLIST = [                    # Symbols to monitor and trade
 # --- POSITION SIZING ---------------------------------------------------------
 MAX_POSITION_VALUE   = 5000      # Max USD per position
 MAX_OPEN_POSITIONS   = 3         # Max concurrent positions
-FRACTIONAL_SHARES    = True      # Allow fractional shares
 
 # --- RISK MANAGEMENT ---------------------------------------------------------
-STOP_LOSS_PCT        = 0.02      # 2% stop loss per position
-TAKE_PROFIT_PCT      = 0.04      # 4% take profit per position
 MAX_DAILY_LOSS_USD   = 500       # Bot halts if daily loss exceeds this
 
 # --- STRATEGY ----------------------------------------------------------------
-STRATEGY             = "momentum"  # Placeholder — strategy logic in strategy.py
 LOOKBACK_BARS        = 20          # Number of bars for signal calculation
 BAR_TIMEFRAME        = "1Min"      # 1Min, 5Min, 15Min, 1Hour, 1Day
-
-# --- SCHEDULE ----------------------------------------------------------------
-# Times in US/Eastern. Bot only trades within this window.
-MARKET_OPEN_BUFFER_MINUTES  = 15   # Wait N minutes after open before trading
-MARKET_CLOSE_BUFFER_MINUTES = 30   # Stop trading N minutes before close
 
 # --- ORDER EXECUTION ---------------------------------------------------------
 ORDER_TYPE           = "market"    # market | limit

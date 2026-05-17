@@ -130,4 +130,4 @@ When working on Svelte/SvelteKit code, use these tools in order:
 - Claude never executes trades directly
 - Bot never exceeds preset parameters without code change
 - Claude autonomous adjustments stay within defined outer envelope
-- Kill switch: STOP file in bot directory halts bot immediately
+- Kill switch: creating a `STOP` file in the bot's `WorkingDirectory` (`/root/trading_bot/bot/` on the VPS) halts the bot at the next scan-loop iteration — worst-case latency is one `POLL_INTERVAL_SEC` (default 60s), not instant
