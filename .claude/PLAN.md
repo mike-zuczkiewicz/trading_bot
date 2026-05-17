@@ -1,25 +1,16 @@
 # Trading Bot — Development Plan
 
-## Phase Status
+This file holds strategy parameters, signal layers, gate criteria, and Claude's autonomy envelope — the **policy and design** layer.
 
-### Completed
-- ✅ Phase 1: Infrastructure (Alpaca connected, VPS provisioned, bot scaffold)
-- ✅ Phase 2: Reboot-proof (systemd, .env, SSH from Windows)
-- ✅ Security hardening (UFW, Fail2ban, non-root user, root SSH disabled)
-- ✅ Bot migrated into git (2026-05-17) — VPS deploys via `sudo git -C /root/trading_bot pull && sudo systemctl restart trading-bot.service`
+Sister files:
+- `PHASES.md` — the phase list and purpose of each phase
+- `TASKS.md` — concrete coding tasks for the active phase
 
-### Pending
-- [ ] Mac SSH as mike
-- [ ] Phase 3: CAN SLIM bot + email alerts
-- [ ] Phase 3.1: Market-regime filter (SPY 200-SMA gate)
-- [ ] Phase 3.2: Institutional-sponsorship signal
-- [ ] Phase 4: Signal layers
-- [ ] Phase 5: Svelte web app
-  - [ ] Configure Font Awesome Pro v7.2.0 kit
-- [ ] Phase 6: Telegram bot
-- [ ] Phase 7: Live trading — gated on paper-validation criteria below
+Read all three at session start; if anything below contradicts current code, surface it before starting work.
 
-### Phase 7 entry criteria (all must be true, evaluated over ≥4 weeks live-paper)
+---
+
+## Phase 7 entry criteria (all must be true, evaluated over ≥4 weeks live-paper)
 - Closed trade count: ≥ 30 (for statistical signal)
 - Win rate: ≥ 45%
 - Average winner / average loser: ≥ 2.0

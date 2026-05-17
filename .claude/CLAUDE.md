@@ -1,6 +1,13 @@
 # Trading Bot — Project Context for Claude
 
-> **Session start:** Read `.claude/MEMORY.md` first, then `.claude/PLAN.md`, then continue with this file.
+> **Session start (read in this order):**
+> 1. `.claude/MEMORY.md` — behavioural rules and persistent context
+> 2. `.claude/PHASES.md` — where the project is on the roadmap
+> 3. `.claude/TASKS.md` — concrete next coding tasks
+> 4. `.claude/PLAN.md` — strategy parameters, signal layers, Phase 7 gate, Claude's autonomy envelope
+> 5. This file (`CLAUDE.md`) — infrastructure, conventions, hard limits
+>
+> The three middle files (`PHASES`, `TASKS`, `PLAN`) are connected views of the same plan — keep them in sync per the rule in `MEMORY.md` §Documentation Maintenance.
 
 ## Project Overview
 Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cup-with-handle entry pattern, hosted on DigitalOcean VPS. Claude interacts via Alpaca MCP server for monitoring and advisory analysis.
