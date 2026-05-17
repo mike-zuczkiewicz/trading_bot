@@ -164,4 +164,6 @@ $RECYCLE.BIN/
 # Bot logs
 bot.log
 
-# CLAUDE.md is intentionally tracked in the repository, so that it can be updated and committed. 
+# CLAUDE.md is intentionally tracked in the repository, so that it can be updated and committed.
+.claude/settings.local.json
+ 
