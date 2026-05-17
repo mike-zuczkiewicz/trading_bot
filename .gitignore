@@ -134,3 +134,34 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# SvelteKit
+.svelte-kit/
+build/
+
+# Python / Bot
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Environment
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Bot logs
+bot.log
+
+# CLAUDE.md is intentionally tracked in the repository, so that it can be updated and committed. 
