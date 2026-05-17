@@ -4,8 +4,8 @@ Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cu
 Hosted on DigitalOcean (Frankfurt). Includes a SvelteKit frontend for monitoring and control.
 
 ## Layout
-- `trading-bot/` — SvelteKit web app (this repo's main tracked code)
-- `/root/trading-bot/` on the VPS — Python bot (separate; see `.claude/CLAUDE.md`)
+- `bot/` — Python trading bot (CAN SLIM + cup-with-handle); deployed to the VPS via `git pull`
+- `trading-bot/` — SvelteKit web app (frontend for monitoring + control)
 - `.claude/` — project context, strategy plan, and behavioural rules
 
 ## Frontend (`trading-bot/`)
@@ -38,9 +38,9 @@ Preview the production build with `npm run preview`.
 npx sv@0.15.3 create --template minimal --types ts --add prettier eslint mcp="ide:claude-code+setup:remote" --install npm trading-bot
 ```
 
-## Bot (VPS)
+## Bot (`bot/`)
 
-Lives outside this repo at `/root/trading-bot/` on the production droplet. See [.claude/CLAUDE.md](.claude/CLAUDE.md) for infrastructure, deployment, and strategy details. Status and pending phases tracked in [.claude/PLAN.md](.claude/PLAN.md).
+Python trading bot. Source lives here; deployed to `/root/trading_bot/bot/` on the production droplet via `git pull`. See [bot/README.md](bot/README.md) for the deploy workflow and the one-time migration runbook (the bot was previously scp-only at `/root/trading-bot/`). Strategy parameters and phase roadmap live in [.claude/PLAN.md](.claude/PLAN.md); infrastructure details in [.claude/CLAUDE.md](.claude/CLAUDE.md).
 
 ## Status
 

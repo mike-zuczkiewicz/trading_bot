@@ -29,18 +29,22 @@ Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cu
 - .env permissions: 600
 - Bot currently runs as root — move to mike after web app build
 
-### Bot Files (VPS only — not in Git)
-- Location: `/root/trading-bot/`
-- Files: `bot.py`, `config.py`, `strategy.py`, `venv/`
-- Environment: `/root/trading-bot/.env`
-- Systemd service: `trading-bot.service` (enabled, auto-restart)
-- Log: `/root/trading-bot/bot.log`
-- **Not tracked in Git — deployed directly to VPS via scp**
+### Bot (in this repo at `bot/`)
+- Source: `bot/bot.py`, `bot/config.py`, `bot/strategy.py` — version-controlled
+- Dependencies: `bot/requirements.txt`
+- Environment: `bot/.env` (gitignored; copy from `bot/.env.example`)
+- VPS location: `/root/trading_bot/bot/` (cloned via git, not scp)
+- Systemd service: `trading-bot.service` (enabled, auto-restart); `WorkingDirectory=/root/trading_bot/bot`
+- Log: `bot/bot.log` on the VPS (gitignored)
+- Deploy: `git pull && sudo systemctl restart trading-bot.service` on the VPS. See `bot/README.md` for the one-time migration runbook from the old scp workflow.
 
-### Git Repo (SvelteKit frontend only)
+### Git Repo (monorepo: frontend + bot)
 - Local path: `C:\Users\mikez\iCloudDrive\DEV\trading_bot\`
-- Contains SvelteKit frontend only
-- Python bot files are NOT in this repo
+- Remote: `https://github.com/mike-zuczkiewicz/trading_bot.git`
+- Layout:
+  - `trading-bot/` — SvelteKit web app
+  - `bot/` — Python trading bot (migrated into git; was VPS-only before)
+  - `.claude/` — project context, plan, behavioural rules
 
 ---
 
