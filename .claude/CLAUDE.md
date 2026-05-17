@@ -18,10 +18,11 @@ Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cu
 - Root SSH login: disabled
 
 ### SSH Access
-- Windows key: `C:\Users\mikez\.ssh\id_ed25519`
+- Windows key: `C:\Users\mikez\.ssh\id_ed25519` (authorized for `mike` on the VPS)
 - Mac key: `~/.ssh/id_ed25519`
-- Mac SSH as mike: pending setup
-- Windows SSH config: `C:\Users\mikez\.ssh\config`
+- Mac SSH as mike: pending setup (use `ssh-copy-id` once, same procedure as Windows)
+- Windows SSH config: `C:\Users\mikez\.ssh\config` defines `Host vps` → `ssh vps` and `scp vps:...` work without arguments
+- Sudo on the VPS: `mike` is in the sudo group but **needs a password** for sudo commands (no NOPASSWD rules in place). Any runbook with `sudo` on the VPS has to be pasted by Mike — Claude can't drive sudo over SSH.
 
 ### Security
 - UFW firewall: ports 22, 80, 443
@@ -32,18 +33,19 @@ Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cu
 ### Bot (in this repo at `bot/`)
 - Source: `bot/bot.py`, `bot/config.py`, `bot/strategy.py` — version-controlled
 - Dependencies: `bot/requirements.txt`
-- Environment: `bot/.env` (gitignored; copy from `bot/.env.example`)
-- VPS location: `/root/trading_bot/bot/` (cloned via git, not scp)
-- Systemd service: `trading-bot.service` (enabled, auto-restart); `WorkingDirectory=/root/trading_bot/bot`
-- Log: `bot/bot.log` on the VPS (gitignored)
-- Deploy: `git pull && sudo systemctl restart trading-bot.service` on the VPS. See `bot/README.md` for the one-time migration runbook from the old scp workflow.
+- Environment: `bot/.env` (gitignored; copy from `bot/.env.example`). Required vars: `ALPACA_API_KEY`, `ALPACA_SECRET_KEY` (note: `SECRET_KEY`, not `API_SECRET`).
+- VPS location: `/root/trading_bot/bot/` (cloned via git, not scp). Migrated 2026-05-17.
+- Systemd service: `trading-bot.service` (enabled, auto-restart); `WorkingDirectory=/root/trading_bot/bot`, `User=root` (move to `mike` after web app build).
+- Log: `/root/trading_bot/bot/bot.log` on the VPS (gitignored)
+- Current strategy state: scaffold only — `strategy.py` is a momentum stub, `config.py` has placeholder params that **do not match** the CAN SLIM values in `PLAN.md` §Strategy Parameters. Phase 3 work will replace both.
+- Deploy: `sudo git -C /root/trading_bot pull && sudo systemctl restart trading-bot.service` on the VPS. `git -C <path>` is required because `mike` can't `cd` into `/root/` even with sudo. The historical migration runbook is retained in `bot/README.md` for reference only.
 
 ### Git Repo (monorepo: frontend + bot)
-- Local path: `C:\Users\mikez\iCloudDrive\DEV\trading_bot\`
-- Remote: `https://github.com/mike-zuczkiewicz/trading_bot.git`
+- Local path: `d:\DEV\trading_bot\` (Windows). On Mac, path will differ — see whatever the session's working directory reports.
+- Remote: `https://github.com/mike-zuczkiewicz/trading_bot.git` (**public** — anonymous clone works; required for the VPS to pull without auth setup)
 - Layout:
-  - `trading-bot/` — SvelteKit web app
-  - `bot/` — Python trading bot (migrated into git; was VPS-only before)
+  - `trading-bot/` — SvelteKit web app (scaffold only)
+  - `bot/` — Python trading bot (migrated into git 2026-05-17; was VPS-only before)
   - `.claude/` — project context, plan, behavioural rules
 
 ---
@@ -104,7 +106,7 @@ When working on Svelte/SvelteKit code, use these tools in order:
 ---
 
 ## Audit Trail (where parameter changes are logged)
-- Location: `/root/trading-bot/audit.log` on the VPS (append-only)
+- Location: `/root/trading_bot/bot/audit.log` on the VPS (append-only). Not yet implemented — Phase 3 work; this path is the target for when it lands.
 - Format: JSON Lines (one JSON object per line), schema:
   ```
   {
