@@ -31,7 +31,7 @@ Replaces the momentum stub in `bot/strategy.py`. Build incrementally — each su
 - [ ] Update `bot.py`'s scan loop to iterate the loaded universe.
 
 ### Screener (CAN SLIM — see `PLAN.md` §Signal Layers for full source list)
-- [ ] **C + A — Earnings:** integrate Morningstar MCP or Financial Modeling Prep (free tier) for current + prior quarter EPS and revenue growth. Threshold: ≥25% YoY EPS growth, ≥25% revenue growth.
+- [ ] **C + A — Earnings:** integrate `yfinance` for quarterly EPS and revenue growth (primary, free, no account); Financial Modeling Prep free tier as fallback. Threshold: ≥25% YoY EPS growth, ≥25% revenue growth. Morningstar Investor MCP used by Claude for advisory validation — not in the automated bot loop (see `PLAN.md` §Morningstar Access).
 - [ ] **L — Relative strength:** compute 12-month RS rank vs S&P 500; keep top 20%.
 - [ ] **S — Volume:** ≥1.4× the 50-day average on the breakout bar.
 - [ ] **N — 52-week high:** current close within 15% of 52-week high.
@@ -80,7 +80,7 @@ Current code polls every `POLL_INTERVAL_SEC` (60s). PLAN.md wants three schedule
 
 ## Cross-cutting (not phase-gated)
 
-- [ ] **Mac SSH as `mike`:** same `ssh-copy-id` one-line procedure as Windows. Closes the last pending item under Phase 2.
+- [x] **Mac SSH as `mike`:** key already authorized, verified working 2026-05-19.
 - [ ] **Move bot from `User=root` to `User=mike`** in the systemd unit. Do this after Phase 5 (web app) ships and the production layout is finalized, per `CLAUDE.md`.
 - [ ] **Font Awesome Pro v7.2.0 kit:** configure before Phase 5 starts.
 

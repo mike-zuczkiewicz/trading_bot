@@ -31,9 +31,13 @@ BAR_TIMEFRAME        = "1Min"      # 1Min, 5Min, 15Min, 1Hour, 1Day
 ORDER_TYPE           = "market"    # market | limit
 LIMIT_SLIPPAGE_PCT   = 0.001       # For limit orders: offset from mid-price
 
+# --- SCREENER SCHEDULE -------------------------------------------------------
+SCREENER_TIMES_HM    = [(15, 30), (18, 45), (22, 0)]  # Berlin time (HH, MM)
+SCREENER_TZ          = "Europe/Berlin"
+
 # --- CONTROL -----------------------------------------------------------------
 STOP_FILE            = "STOP"      # Bot halts if this file exists in run dir
-POLL_INTERVAL_SEC    = 60          # Seconds between market scans
+POLL_INTERVAL_SEC    = 60          # Seconds between trading-loop scans
 
 # --- LOGGING -----------------------------------------------------------------
 LOG_FILE             = "bot.log"

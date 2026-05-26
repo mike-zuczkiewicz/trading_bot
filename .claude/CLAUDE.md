@@ -27,7 +27,7 @@ Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cu
 ### SSH Access
 - Windows key: `C:\Users\mikez\.ssh\id_ed25519` (authorized for `mike` on the VPS)
 - Mac key: `~/.ssh/id_ed25519`
-- Mac SSH as mike: pending setup (use `ssh-copy-id` once, same procedure as Windows)
+- Mac SSH as mike: working — `~/.ssh/id_ed25519` already authorized for `mike@167.172.107.21` (verified 2026-05-19)
 - Windows SSH config: `C:\Users\mikez\.ssh\config` defines `Host vps` → `ssh vps` and `scp vps:...` work without arguments
 - Sudo on the VPS: `mike` is in the sudo group but **needs a password** for sudo commands (no NOPASSWD rules in place). Any runbook with `sudo` on the VPS has to be pasted by Mike — Claude can't drive sudo over SSH.
 

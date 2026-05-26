@@ -1,4 +1,7 @@
+# Pinned for VPS (Ubuntu 24.04, Python 3.11). For local dev on Mac (Python 3.9),
+# install loose: pip install alpaca-py python-dotenv pandas
 alpaca-py==0.43.4
+python-dotenv==1.1.0
 annotated-types==0.7.0
 certifi==2026.4.22
 charset-normalizer==3.4.7

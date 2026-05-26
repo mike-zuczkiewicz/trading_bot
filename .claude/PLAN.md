@@ -27,7 +27,9 @@ Read all three at session start; if anything below contradicts current code, sur
 - Universe: S&P 500 (503 stocks)
 - Scan times: Market open, midday, close (Berlin: 15:30, 18:45, 22:00)
 - Mode: Signals only (no auto-execution yet)
-- Earnings data: Morningstar MCP + Financial Modeling Prep (free tier)
+- Earnings data:
+  - Bot (automated): yfinance (quarterly EPS + revenue, free, no account required); Financial Modeling Prep free tier as fallback
+  - Claude (advisory): Morningstar Investor (paid) via MCP — fair value, moat, star rating, financials; used for signal validation in conversation, not in bot loop
 
 ### Entry
 - Cup-with-handle breakout above handle high
@@ -63,7 +65,7 @@ Read all three at session start; if anything below contradicts current code, sur
 2. Cup-with-handle entry trigger
 3. Trump Truth Social / X posts via Alpaca news feed
 4. Congressional trades via Capitol Trades (Trump focus)
-5. Morningstar MCP for fundamental earnings data
+5. Morningstar Investor MCP (paid) — fair value, moat, star rating, C+A confirmation; Claude advisory use only
 
 ---
 
@@ -82,6 +84,17 @@ Claude may add up to **+$5,000** to an existing position when ALL of the followi
 - No scheduled earnings within next 5 trading days
 - Resulting total notional ≤ max-concurrent cap × per-position size
 - Action is logged to audit trail with all five values that satisfied the rule
+
+---
+
+## Morningstar Access
+- Subscription: Morningstar Investor (paid, individual)
+- Interface: Morningstar MCP (`mcp__claude_ai_Morningstar__authenticate`) — Claude only; bot cannot call MCP tools
+- Coverage relevant to CAN SLIM:
+  - C + A: quarterly/annual EPS and revenue actuals + growth (confirms bot screener output)
+  - Quality overlay: economic moat (Wide/Narrow/None), financial health grade, star rating (1–5) — soft filters
+  - Fair value estimate: context for position sizing and entry timing
+- NOT covered by Investor tier: deep 13F institutional ownership aggregations — Phase 3.2 "I" signal still needs Alpaca news + 13F approach
 
 ---
 
