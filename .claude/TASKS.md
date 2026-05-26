@@ -8,6 +8,8 @@ Sister files:
 
 **Active phase:** Phase 3 — CAN SLIM bot + email alerts. Phase 3.1 (regime filter) is the prerequisite that ships first.
 
+**Parking lot:** ratcheting trailing-stop variant — see [PLAN.md §Open Design Questions](PLAN.md). Discuss / backtest before scheduling.
+
 ---
 
 ## Phase 3.1 — Market-regime filter (SPY 200-SMA) — START HERE
@@ -65,8 +67,8 @@ Schema and policy in `CLAUDE.md` §Audit Trail. Currently aspirational; not impl
 - [ ] Send on: BUY signal, SELL signal, daily-loss halt, STOP-file detected, regime flip (Phase 3.1), audit-log write error.
 
 ### Scan-time gating
-Current code polls every `POLL_INTERVAL_SEC` (60s). PLAN.md wants three scheduled scans per day.
-- [ ] Replace continuous polling with scheduled runs at Berlin 15:30, 18:45, 22:00. Use the `schedule` library, or a sleep-until-next-window loop.
+Current code polls every `POLL_INTERVAL_SEC` (60s). PLAN.md wants three scheduled scans per day. Schedule constants `SCREENER_TIMES_HM` and `SCREENER_TZ` already exist in [bot/config.py](../bot/config.py); what's missing is the `bot.py` refactor that uses them.
+- [ ] Refactor [bot/bot.py](../bot/bot.py) to the two-thread architecture in [scan-loop.html](scan-loop.html): screener thread fires at the scheduled Berlin windows and writes to a `screener_signals` dict; trading thread runs every 60s, pauses while screener is running, and reads signals from the shared dict.
 
 ---
 
@@ -80,7 +82,6 @@ Current code polls every `POLL_INTERVAL_SEC` (60s). PLAN.md wants three schedule
 
 ## Cross-cutting (not phase-gated)
 
-- [x] **Mac SSH as `mike`:** key already authorized, verified working 2026-05-19.
 - [ ] **Move bot from `User=root` to `User=mike`** in the systemd unit. Do this after Phase 5 (web app) ships and the production layout is finalized, per `CLAUDE.md`.
 - [ ] **Font Awesome Pro v7.2.0 kit:** configure before Phase 5 starts.
 
@@ -92,3 +93,4 @@ Move tasks here as they ship, with date + commit SHA. Pruned periodically.
 
 - 2026-05-17: bot migrated into git, deploy workflow switched to `git -C /root/trading_bot pull && systemctl restart` — commits `bf910ea`..`444e6d6`.
 - 2026-05-17: post-audit cleanup of unused `config.py` keys (`FRACTIONAL_SHARES`, `STOP_LOSS_PCT`, etc. removed) and STOP-latency wording — `444e6d6`.
+- 2026-05-19: Mac SSH as `mike` confirmed working (key already authorized) — no commit, environment-only.
