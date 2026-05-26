@@ -16,71 +16,91 @@
   .legend { display: flex; gap: 18px; font-size: 12px; color: #8a8f98; margin-bottom: 16px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
-  .live { background: #1f2937; border: 1px solid #374151; }
+  .live    { background: #1f2937; border: 1px solid #374151; }
   .pending { background: #fff4e6; border: 1px dashed #d97706; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .col-label { font-size: 11px; color: #8a8f98; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
   .diagram { background: #11141a; border-radius: 8px; padding: 24px; overflow: auto; }
   .mermaid { font-family: inherit; }
 </style>
 </head>
 <body>
   <h1>Trading Bot — Scan Loop</h1>
-  <div class="sub">bot/bot.py runtime. Dashed nodes are Phase 3 / 3.1 work not yet in code.</div>
+  <div class="sub">Two threads in one process. Dashed nodes = Phase 3 / 3.1 work not yet in code.</div>
   <div class="legend">
     <span><span class="swatch live"></span> in code today</span>
     <span><span class="swatch pending"></span> Phase 3 / 3.1 plug-in</span>
   </div>
-  <div class="diagram">
+
+  <div class="cols">
+    <!-- SCREENER THREAD -->
+    <div>
+      <div class="col-label">Screener thread — 3× / day (Berlin 15:30 · 18:45 · 22:00)</div>
+      <div class="diagram">
 <pre class="mermaid">
 flowchart TD
-    Start([Scan tick]) --> StopChk{STOP file<br/>exists?}
-    StopChk -- yes --> Halt([Log halt &amp; exit])
-    StopChk -- no --> Acct[get_account]
-    Acct --> AcctErr{API error?}
-    AcctErr -- yes --> LogErr[log.error<br/>Failed to fetch account]
-    LogErr --> Sleep
-    AcctErr -- no --> DailyLoss{Daily loss<br/>&ge; MAX_DAILY_LOSS_USD?}
-    DailyLoss -- yes --> Halt
-    DailyLoss -- no --> Pos[get_positions]
-
-    Pos -.-> Regime{{"Phase 3.1<br/>SPY close &gt; 200-SMA?"}}
-    Regime -. no .-> ExitOnly[Run exits only,<br/>skip BUY branch]
-    Regime -. yes .-> ScanList
-
-    Pos --> ScanList[for symbol in WATCHLIST]
-    ScanList --> Bars[get_bars symbol]
-    Bars --> Sig[generate_signal<br/><i>momentum stub today</i>]
-    Sig -.-> Screener{{"Phase 3<br/>CAN SLIM screen<br/>+ cup-with-handle"}}
-
-    Sig --> SigVal{signal?}
-    SigVal -- none --> NextSym[next symbol]
-    SigVal -- buy --> InPos1{in position?}
-    InPos1 -- yes --> NextSym
-    InPos1 -- no --> MaxPos{positions &ge;<br/>MAX_OPEN_POSITIONS?}
-    MaxPos -- yes --> NextSym
-    MaxPos -- no --> TradeEn1{TRADING_ENABLED?}
-    TradeEn1 -- yes --> Buy[place_order BUY]
-    TradeEn1 -- no --> DryBuy[log DRY RUN BUY]
-    Buy --> NextSym
-    DryBuy --> NextSym
-
-    SigVal -- sell --> InPos2{in position?}
-    InPos2 -- no --> NextSym
-    InPos2 -- yes --> TradeEn2{TRADING_ENABLED?}
-    TradeEn2 -- yes --> Sell[place_order SELL]
-    TradeEn2 -- no --> DrySell[log DRY RUN SELL]
-    Sell --> NextSym
-    DrySell --> NextSym
-
-    InPos2 -.-> Staged{{"Phase 3<br/>Staged exits<br/>-5%: sell 50%<br/>-8%: sell rest"}}
-
-    NextSym --> MoreSyms{more symbols?}
-    MoreSyms -- yes --> ScanList
-    MoreSyms -- no --> Sleep[Sleep POLL_INTERVAL_SEC]
-    Sleep --> Start
+    S0([Screener thread start]) --> S1[Wait 30 s]
+    S1 --> S2{Due slot &amp;<br/>not yet run today?}
+    S2 -- no --> S1
+    S2 -- yes --> S3[Set screener_running event]
+    S3 --> S4[for symbol in WATCHLIST<br/>get_bars · generate_signal]
+    S4 -.-> S5{{"Phase 3<br/>CAN SLIM screen<br/>+ cup-with-handle"}}
+    S4 --> S6[Update screener_signals dict]
+    S6 --> S7[Clear screener_running event]
+    S7 --> S8[Mark slot done for today]
+    S8 --> S1
 
     classDef pending stroke-dasharray: 5 5,fill:#fff4e6,stroke:#d97706,color:#92400e
-    class Regime,ExitOnly,Screener,Staged pending
+    class S5 pending
 </pre>
+      </div>
+    </div>
+
+    <!-- TRADING THREAD -->
+    <div>
+      <div class="col-label">Trading thread — every 60 s</div>
+      <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    T0([Trading thread start]) --> T1{STOP file?}
+    T1 -- yes --> Halt([Log halt &amp; exit])
+    T1 -- no --> T2{screener_running<br/>event set?}
+    T2 -- yes --> T3[Log: paused] --> TSleep[Sleep 60 s] --> T1
+    T2 -- no --> T4[get_account]
+    T4 --> T4e{API error?}
+    T4e -- yes --> TSleep
+    T4e -- no --> T5{Daily loss<br/>&ge; MAX_DAILY_LOSS_USD?}
+    T5 -- yes --> Halt
+    T5 -- no --> T6[get_positions]
+
+    T6 -.-> T7{{"Phase 3<br/>Staged exits<br/>−5%: sell 50%<br/>−8%: sell rest"}}
+
+    T6 --> T8[for symbol in screener_signals]
+
+    T8 --> T9{Signal?}
+    T9 -- none / next --> TSleep2[Sleep 60 s] --> T1
+
+    T9 -- buy --> B1{in position?}
+    B1 -- yes --> T9
+    B1 -- no --> B2{positions &ge;<br/>MAX_OPEN_POSITIONS?}
+    B2 -- yes --> T9
+    B2 -- no --> B3{TRADING_ENABLED?}
+    B3 -- yes --> B4[place_order BUY] --> T9
+    B3 -- no --> B5[log DRY RUN BUY] --> T9
+
+    T9 -- sell --> L1{in position?}
+    L1 -- no --> T9
+    L1 -- yes --> L2{TRADING_ENABLED?}
+    L2 -- yes --> L3[place_order SELL] --> T9
+    L2 -- no --> L4[log DRY RUN SELL] --> T9
+
+    T8 -.-> R{{"Phase 3.1<br/>SPY &gt; 200-SMA?<br/>no → skip BUY branch"}}
+
+    classDef pending stroke-dasharray: 5 5,fill:#fff4e6,stroke:#d97706,color:#92400e
+    class T7,R pending
+</pre>
+      </div>
+    </div>
   </div>
 
 <script type="module">
