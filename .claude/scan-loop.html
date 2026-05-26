@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trading Bot — Scan Loop</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0b0d12;
+    color: #e6e6e6;
+  }
+  h1 { font-weight: 500; font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #8a8f98; font-size: 13px; margin-bottom: 24px; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: #8a8f98; margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+  .live { background: #1f2937; border: 1px solid #374151; }
+  .pending { background: #fff4e6; border: 1px dashed #d97706; }
+  .diagram { background: #11141a; border-radius: 8px; padding: 24px; overflow: auto; }
+  .mermaid { font-family: inherit; }
+</style>
+</head>
+<body>
+  <h1>Trading Bot — Scan Loop</h1>
+  <div class="sub">bot/bot.py runtime. Dashed nodes are Phase 3 / 3.1 work not yet in code.</div>
+  <div class="legend">
+    <span><span class="swatch live"></span> in code today</span>
+    <span><span class="swatch pending"></span> Phase 3 / 3.1 plug-in</span>
+  </div>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    Start([Scan tick]) --> StopChk{STOP file<br/>exists?}
+    StopChk -- yes --> Halt([Log halt &amp; exit])
+    StopChk -- no --> Acct[get_account]
+    Acct --> AcctErr{API error?}
+    AcctErr -- yes --> LogErr[log.error<br/>Failed to fetch account]
+    LogErr --> Sleep
+    AcctErr -- no --> DailyLoss{Daily loss<br/>&ge; MAX_DAILY_LOSS_USD?}
+    DailyLoss -- yes --> Halt
+    DailyLoss -- no --> Pos[get_positions]
+
+    Pos -.-> Regime{{"Phase 3.1<br/>SPY close &gt; 200-SMA?"}}
+    Regime -. no .-> ExitOnly[Run exits only,<br/>skip BUY branch]
+    Regime -. yes .-> ScanList
+
+    Pos --> ScanList[for symbol in WATCHLIST]
+    ScanList --> Bars[get_bars symbol]
+    Bars --> Sig[generate_signal<br/><i>momentum stub today</i>]
+    Sig -.-> Screener{{"Phase 3<br/>CAN SLIM screen<br/>+ cup-with-handle"}}
+
+    Sig --> SigVal{signal?}
+    SigVal -- none --> NextSym[next symbol]
+    SigVal -- buy --> InPos1{in position?}
+    InPos1 -- yes --> NextSym
+    InPos1 -- no --> MaxPos{positions &ge;<br/>MAX_OPEN_POSITIONS?}
+    MaxPos -- yes --> NextSym
+    MaxPos -- no --> TradeEn1{TRADING_ENABLED?}
+    TradeEn1 -- yes --> Buy[place_order BUY]
+    TradeEn1 -- no --> DryBuy[log DRY RUN BUY]
+    Buy --> NextSym
+    DryBuy --> NextSym
+
+    SigVal -- sell --> InPos2{in position?}
+    InPos2 -- no --> NextSym
+    InPos2 -- yes --> TradeEn2{TRADING_ENABLED?}
+    TradeEn2 -- yes --> Sell[place_order SELL]
+    TradeEn2 -- no --> DrySell[log DRY RUN SELL]
+    Sell --> NextSym
+    DrySell --> NextSym
+
+    InPos2 -.-> Staged{{"Phase 3<br/>Staged exits<br/>-5%: sell 50%<br/>-8%: sell rest"}}
+
+    NextSym --> MoreSyms{more symbols?}
+    MoreSyms -- yes --> ScanList
+    MoreSyms -- no --> Sleep[Sleep POLL_INTERVAL_SEC]
+    Sleep --> Start
+
+    classDef pending stroke-dasharray: 5 5,fill:#fff4e6,stroke:#d97706,color:#92400e
+    class Regime,ExitOnly,Screener,Staged pending
+</pre>
+  </div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    securityLevel: 'loose',
+    flowchart: { curve: 'basis', useMaxWidth: true },
+  });
+</script>
+</body>
+</html>
