@@ -111,3 +111,21 @@ Claude may add up to **+$5,000** to an existing position when ALL of the followi
 ## Alerts
 - Email: okipapa@me.com (Phase 3)
 - Telegram: account created, username pending (Phase 6)
+
+---
+
+## Open Design Questions (parking lot — discuss before scheduling)
+
+### Trailing stop variant — ratcheting floor at 50% of gain
+Current exits are fixed from entry (−5% / −8%). Idea to revisit: replace the fixed-entry basis with a **ratcheting floor** that rises (never falls) at half the rate of unrealised gain. The same staged-exit percentages then apply, but measured from the floor instead of entry.
+
+- Floor starts at entry. On each new high, floor += 50% × (new_high − previous_floor). Floor never decreases.
+- Stage-1 stop = floor × 0.95 (sell 50%)
+- Stage-2 stop = floor × 0.92 (sell remainder)
+
+Worked example:
+- Entry $100 → floor $100 → stops $95.00 / $92.00
+- Price → $110 → floor $105 → stops $99.75 / $96.60
+- Price → $120 → floor $110 → stops $104.50 / $101.20 (now in profit-lock territory)
+
+Open: backtest against the fixed-entry baseline before adopting; check interaction with normal handle-retest pullbacks in cup-with-handle setups.
