@@ -1,0 +1,442 @@
+==================================================================
+FILE: .claude/CLAUDE.md
+==================================================================
+# Trading Bot — Project Context for Claude
+
+> **Session start (read in this order):**
+> 1. `.claude/MEMORY.md` — behavioural rules and persistent context
+> 2. `.claude/PHASES.md` — where the project is on the roadmap
+> 3. `.claude/TASKS.md` — concrete next coding tasks
+> 4. `.claude/PLAN.md` — strategy parameters, signal layers, Phase 7 gate, Claude's autonomy envelope
+> 5. This file (`CLAUDE.md`) — infrastructure, conventions, hard limits
+>
+> The three middle files (`PHASES`, `TASKS`, `PLAN`) are connected views of the same plan — keep them in sync per the rule in `MEMORY.md` §Documentation Maintenance.
+
+## Project Overview
+Automated trading bot using Alpaca paper/live account, CAN SLIM strategy with cup-with-handle entry pattern, hosted on DigitalOcean VPS. Claude interacts via Alpaca MCP server for monitoring and advisory analysis.
+
+---
+
+## Infrastructure
+
+### DigitalOcean VPS
+- IP: 167.172.107.21
+- OS: Ubuntu 24.04 LTS
+- Size: 1 vCPU, 1GB RAM, $6/mo
+- Datacenter: Frankfurt (FRA1)
+- User: `mike` (sudo)
+- Root SSH login: disabled
+
+### SSH Access
+- Windows key: `C:\Users\mikez\.ssh\id_ed25519` (authorized for `mike` on the VPS)
+- Mac key: `~/.ssh/id_ed25519`
+- Mac SSH as mike: working — `~/.ssh/id_ed25519` already authorized for `mike@167.172.107.21` (verified 2026-05-19)
+- Windows SSH config: `C:\Users\mikez\.ssh\config` defines `Host vps` → `ssh vps` and `scp vps:...` work without arguments
+- Sudo on the VPS: `mike` is in the sudo group but **needs a password** for sudo commands (no NOPASSWD rules in place). Any runbook with `sudo` on the VPS has to be pasted by Mike — Claude can't drive sudo over SSH.
+
+### Security
+- UFW firewall: ports 22, 80, 443
+- Fail2ban: enabled
+- .env permissions: 600
+- Bot currently runs as root — move to mike after web app build
+
+### Bot (in this repo at `bot/`)
+- Source: `bot/bot.py`, `bot/config.py`, `bot/strategy.py` — version-controlled
+- Dependencies: `bot/requirements.txt`
+- Environment: `bot/.env` (gitignored; copy from `bot/.env.example`). Required vars: `ALPACA_API_KEY`, `ALPACA_SECRET_KEY` (note: `SECRET_KEY`, not `API_SECRET`).
+- VPS location: `/root/trading_bot/bot/` (cloned via git, not scp). Migrated 2026-05-17.
+- Systemd service: `trading-bot.service` (enabled, auto-restart); `WorkingDirectory=/root/trading_bot/bot`, `User=root` (move to `mike` after web app build).
+- Log: `/root/trading_bot/bot/bot.log` on the VPS (gitignored)
+- Current strategy state: scaffold only — `strategy.py` is a momentum stub, `config.py` has placeholder params that **do not match** the CAN SLIM values in `PLAN.md` §Strategy Parameters. Phase 3 work will replace both.
+- Deploy: `sudo git -C /root/trading_bot pull && sudo systemctl restart trading-bot.service` on the VPS. `git -C <path>` is required because `mike` can't `cd` into `/root/` even with sudo. The historical migration runbook is retained in `bot/README.md` for reference only.
+
+### Git Repo (monorepo: frontend + bot)
+- Local path: `d:\DEV\trading_bot\` (Windows). On Mac, path will differ — see whatever the session's working directory reports.
+- Remote: `https://github.com/mike-zuczkiewicz/trading_bot.git` (**public** — anonymous clone works; required for the VPS to pull without auth setup)
+- Layout:
+  - `trading-bot/` — SvelteKit web app (scaffold only)
+  - `bot/` — Python trading bot (migrated into git 2026-05-17; was VPS-only before)
+  - `.claude/` — project context, plan, behavioural rules
+
+---
+
+## Alpaca Account
+- Type: Paper trading
+- Balance: $100,000
+- Buying power: $200,000 (2x margin)
+- Options level: 3
+- TRADING_ENABLED: False (dry-run mode)
+- PAPER_TRADING: True
+
+---
+
+## Coding Conventions
+- Python for bot backend
+- Svelte for frontend (match watchbill style)
+- Read watchbill repo before any frontend work
+
+### Stack
+- SvelteKit + TypeScript
+- Package manager: npm
+- Add-ons: prettier, eslint, mcp
+- Strict TypeScript mode
+- Font Awesome Pro v7.2.0 for icons and styling
+- Match watchbill project conventions before writing any component
+
+### Watchbill Conventions (replicate exactly)
+- **State**: `data.svelte.ts` — single file owns all global `$state()` exports (bot state, positions, orders, UI state). No store subscriptions, no context API, no prop-drilling for global state. Components import directly and mutate in place.
+- **Types**: `types.d.ts` with interfaces: `BotState`, `Position`, `Order`, `UserPrefs`
+- **Routes**: Minimal — `+layout.ts` for auth/init, `+page.ts` for data loading
+- **Services**: Curried fetch layer per API (Alpaca, news, etc.), environment-switched
+- **Styling**: CSS variables for colors/spacing in `app.css`, scoped `<style>` per component
+- **Components**: Domain folders — `trading/`, `portfolio/`, `controls/`, `components/`
+- **Exports**: Barrel file at `src/lib/index.ts`
+- **Permissions**: `userLevel` in `appState`, checked at render time with `$derived()`
+
+### Svelte MCP Tools
+
+When working on Svelte/SvelteKit code, use these tools in order:
+
+1. **`list-sections`** — Call FIRST to discover all available documentation sections. Always use this at the start of any Svelte/SvelteKit task.
+2. **`get-documentation`** — Fetch ALL sections relevant to the task (analyze `use_cases` field to decide).
+3. **`svelte-autofixer`** — Run on ALL Svelte code before delivering it. Keep calling until no issues or suggestions are returned.
+4. **`playground-link`** — Only call after user confirms they want a link. Never call if code was written to project files.
+
+### Prettier (all JS/TS/Svelte files)
+- useTabs: true
+- singleQuote: true
+- semi: false
+- tabWidth: 2
+- trailingComma: es5
+- printWidth: 100
+- plugins: prettier-plugin-svelte (with svelte parser override for *.svelte)
+- Config file: `trading-bot/.prettierrc`
+- Always format before committing
+
+---
+
+## Audit Trail (where parameter changes are logged)
+- Location: `/root/trading_bot/bot/audit.log` on the VPS (append-only). Not yet implemented — Phase 3 work; this path is the target for when it lands.
+- Format: JSON Lines (one JSON object per line), schema:
+  ```
+  {
+    "timestamp": "<ISO-8601 with TZ>",
+    "actor": "claude" | "mike" | "system",
+    "change_type": "param_update" | "position_add" | "manual_override" | "envelope_action",
+    "target": "<param name or position symbol>",
+    "old_value": <any>,
+    "new_value": <any>,
+    "reason": "<free-text>",
+    "envelope_rule_satisfied": <object | null>
+  }
+  ```
+- Rotation: weekly to `audit-YYYY-WW.log.gz`
+- Retention: 1 year minimum
+- Read access: Claude, Mike. Write access: bot process only.
+
+---
+
+## Hard Limits (Never Change)
+- Claude never executes trades directly
+- Bot never exceeds preset parameters without code change
+- Claude autonomous adjustments stay within defined outer envelope
+- Kill switch: creating a `STOP` file in the bot's `WorkingDirectory` (`/root/trading_bot/bot/` on the VPS) halts the bot at the next scan-loop iteration — worst-case latency is one `POLL_INTERVAL_SEC` (default 60s), not instant
+
+==================================================================
+FILE: .claude/MEMORY.md
+==================================================================
+# Trading Bot — Things to Remember
+
+## Time & Location
+- Always use **Berlin time (CET/CEST)** for all time references and scheduling
+- UTC+1 (CET) in winter, UTC+2 (CEST) in summer
+- US market open = 15:30 Berlin, close = 22:00 Berlin
+- Mike is in Wiesbaden, Germany (SOFA status, US citizen)
+
+---
+
+## Behavioral Rules
+- **Do not act on vague or ambiguous requirements** — ask for clarification before implementing
+- **Analysis-only prompts must not produce unsolicited code changes**
+- **All bot parameter changes must be logged** with reasoning and timestamp
+- **Never execute trades directly** — Claude's role is advisory and monitoring only
+- Autonomous parameter adjustments must stay within the predefined outer envelope
+
+---
+
+## Documentation Maintenance
+- **Keep `.claude/PHASES.md`, `.claude/TASKS.md`, and `.claude/PLAN.md` in sync.** These three files are connected views of the same plan: PHASES = where on the roadmap, TASKS = what to code next, PLAN = strategy/policy/parameters. Whenever any of the following happens, update all affected files in the same turn:
+  - A task on `TASKS.md` is shipped (move it under §Done with date + commit SHA, remove its underlying `[ ]` items)
+  - A phase boundary is crossed (start of a new phase, or completion of the active one)
+  - A parameter in `PLAN.md` changes (cup-with-handle params, position sizing, Phase 7 gate, autonomy envelope, etc.)
+  - A new phase is added or scope of an existing phase materially changes
+- **Cross-reference, don't duplicate.** PLAN.md should not repeat the phase list — point at PHASES.md. TASKS.md should not repeat strategy parameters — point at PLAN.md.
+- **At the start of each coding session,** re-read all three. If the files contradict the actual code or `PLAN.md` parameters don't match `config.py`, surface the drift to the user before starting new work.
+
+==================================================================
+FILE: .claude/PHASES.md
+==================================================================
+# Trading Bot — Phases
+
+Authoritative phase list. One paragraph per phase describing what it accomplishes and why it exists.
+
+Sister files:
+- `TASKS.md` — concrete coding tasks for the active phase
+- `PLAN.md` — strategy parameters, signal layer priorities, Phase 7 gate criteria, Claude's autonomy envelope
+
+---
+
+## Completed
+
+### Phase 1 — Infrastructure
+Provisioned the DigitalOcean droplet (Frankfurt, 1vCPU/1GB), connected the Alpaca paper account, scaffolded the bot directory layout, validated SDK auth end-to-end. Established the runtime location on the VPS.
+
+### Phase 2 — Reboot-proof
+Moved the bot under `systemd` with auto-restart and `EnvironmentFile=`-style `.env` loading. SSH key auth from Mike's Windows machine. Bot survives a host reboot without manual intervention.
+
+### Security hardening
+UFW firewall (ports 22/80/443 only), Fail2ban, `.env` at mode 600, root SSH login disabled. `mike` is a sudo user but sudo requires a password (no NOPASSWD rules).
+
+### Bot migrated into git (2026-05-17)
+Source moved from scp-only `/root/trading-bot/` (hyphen) to a version-controlled `bot/` folder. VPS deploys via `sudo git -C /root/trading_bot pull && sudo systemctl restart trading-bot.service`. The repo is public so the VPS can clone anonymously.
+
+---
+
+## Pending
+
+### Phase 3 — CAN SLIM bot + email alerts
+Replace the momentum stub in `strategy.py` with the real CAN SLIM screener and cup-with-handle entry trigger. Add email alerts on signal/exit. First phase where the bot produces trading signals worth acting on (still paper, still dry-run by `TRADING_ENABLED=False`).
+
+### Phase 3.1 — Market-regime filter (SPY 200-SMA gate)
+**Highest-priority Phase-3 add — ships first.** When SPY closes below its 200-day SMA, the screener returns watchlist only and emits no buy entries. Unfiltered CAN SLIM has historically blown up in bear markets, so this guard exists before any meaningful paper-validation period starts.
+
+### Phase 3.2 — Institutional-sponsorship signal
+Use the Alpaca news feed plus 13F-freshness flagging to close the "I" gap in CAN SLIM coverage. Soft signal (raises conviction), not a hard gate.
+
+### Phase 4 — Signal layers
+Supplementary feeds beyond CAN SLIM/cup-with-handle: Trump Truth Social / X posts via the Alpaca news feed, congressional trades via Capitol Trades (Trump focus), Morningstar MCP for fundamentals.
+
+### Phase 5 — Svelte web app
+SvelteKit frontend in `trading-bot/`. Live charts, portfolio view, signal feed, bot control panel, audit log. Matches watchbill project conventions exactly. Hosted on the same VPS via Nginx.
+
+### Phase 6 — Telegram bot
+Telegram channel for alerts and bot commands (status checks, kill switch, parameter queries).
+
+### Phase 7 — Live trading
+Flip `TRADING_ENABLED=True`, `PAPER_TRADING=False`. **Gated on the entry criteria in `PLAN.md` §Phase 7 entry criteria** — ≥30 closed trades, ≥45% win rate, ≥2.0 avg-winner/avg-loser, ≤15% max DD, ≥1.0 Sharpe, no single underlying responsible for >25% of total loss, zero unexplained parameter changes in the audit log, evaluated over ≥4 weeks of paper-trading.
+
+==================================================================
+FILE: .claude/TASKS.md
+==================================================================
+# Trading Bot — Next Coding Tasks
+
+Concrete, actionable work items for the active phase. Tasks here are the unit of "do this next."
+
+Sister files:
+- `PHASES.md` — the phase list (sets context for which tasks are in scope right now)
+- `PLAN.md` — strategy parameters, signal-layer priorities, Phase 7 gate criteria
+
+**Active phase:** Phase 3 — CAN SLIM bot + email alerts. Phase 3.1 (regime filter) is the prerequisite that ships first.
+
+---
+
+## Phase 3.1 — Market-regime filter (SPY 200-SMA) — START HERE
+
+Without this, the bot can't safely run CAN SLIM in bear markets. Smallest possible scope to ship.
+
+- [ ] Add a `bot/regime.py` module exposing `is_buy_regime() -> bool`. Fetch SPY daily bars via the existing Alpaca data client; compare last close to its 200-day SMA.
+- [ ] Cache one SPY-bars fetch per scan loop in `bot.py` (not per symbol).
+- [ ] Wire `is_buy_regime()` into `bot.py`'s scan loop between the watchlist scan and the per-symbol BUY branch. When `False`: log `Regime: bearish — buys disabled` and skip BUY actions. SELL/exit logic stays active.
+- [ ] Add `SPY_REGIME_LOOKBACK_DAYS = 200` to `bot/config.py`.
+- [ ] Unit test: mock SPY bars above vs below the 200-SMA; assert `True`/`False`.
+
+---
+
+## Phase 3 — CAN SLIM screener + cup-with-handle entry
+
+Replaces the momentum stub in `bot/strategy.py`. Build incrementally — each sub-task should produce log-visible behavior before moving on.
+
+### Universe
+- [ ] Replace `WATCHLIST` in `config.py` with a loader for the S&P 500 constituent list. Cache to a gitignored JSON under `bot/` (e.g. `sp500_cache.json`); refresh weekly.
+- [ ] Update `bot.py`'s scan loop to iterate the loaded universe.
+
+### Screener (CAN SLIM — see `PLAN.md` §Signal Layers for full source list)
+- [ ] **C + A — Earnings:** integrate `yfinance` for quarterly EPS and revenue growth (primary, free, no account); Financial Modeling Prep free tier as fallback. Threshold: ≥25% YoY EPS growth, ≥25% revenue growth. Morningstar Investor MCP used by Claude for advisory validation — not in the automated bot loop (see `PLAN.md` §Morningstar Access).
+- [ ] **L — Relative strength:** compute 12-month RS rank vs S&P 500; keep top 20%.
+- [ ] **S — Volume:** ≥1.4× the 50-day average on the breakout bar.
+- [ ] **N — 52-week high:** current close within 15% of 52-week high.
+
+### Cup-with-handle detector
+Parameters in `PLAN.md` §Cup-with-Handle Parameters.
+- [ ] Detect cup base: 7–65 weeks duration, 12–33% depth, right side within 1–2% of left high.
+- [ ] Detect handle: 5–15% pullback, low volume, upper half of cup.
+- [ ] Buy trigger: close above handle high + 40%+ volume surge on the breakout bar.
+
+### Position sizing — align with `PLAN.md` §Position Sizing
+- [ ] `config.py`: set `MAX_POSITION_VALUE = 18750`, `MAX_OPEN_POSITIONS = 5`.
+- [ ] Confirm sizing math in `bot.py` matches `(equity × 0.015) / 0.08` — formula needs to be in code, not hardcoded.
+
+### Staged exit logic
+The bot currently has **no** per-position stop-loss. This is the biggest gap.
+- [ ] Track entry price per position (read from Alpaca position objects; persist locally if needed for restarts).
+- [ ] At −5% from entry: sell 50% of the position.
+- [ ] At −8% from entry: sell remaining 50%.
+- [ ] Wire into the scan loop (runs before BUY logic each cycle).
+- [ ] `config.py`: add `STOP_LOSS_STAGE_1_PCT = 0.05`, `STOP_LOSS_STAGE_2_PCT = 0.08`, `STAGE_1_SELL_FRACTION = 0.5`.
+
+### Audit log writer
+Schema and policy in `CLAUDE.md` §Audit Trail. Currently aspirational; not implemented.
+- [ ] Implement `bot/audit.py` with `log_event(actor, change_type, target, old_value, new_value, reason, envelope_rule_satisfied=None)`. JSONL append to `/root/trading_bot/bot/audit.log`.
+- [ ] Call from `bot.py` on: parameter updates, position adds, manual overrides, envelope actions.
+- [ ] Weekly rotation to `audit-YYYY-WW.log.gz` (cron, or in-Python check on first scan after Monday 00:00 UTC).
+
+### Email alerts
+- [ ] Add SMTP env vars to `.env.example`: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`. Recipient is `okipapa@me.com` per `PLAN.md` §Alerts.
+- [ ] Send on: BUY signal, SELL signal, daily-loss halt, STOP-file detected, regime flip (Phase 3.1), audit-log write error.
+
+### Scan-time gating
+Current code polls every `POLL_INTERVAL_SEC` (60s). PLAN.md wants three scheduled scans per day.
+- [ ] Replace continuous polling with scheduled runs at Berlin 15:30, 18:45, 22:00. Use the `schedule` library, or a sleep-until-next-window loop.
+
+---
+
+## Phase 3.2 — Institutional sponsorship (after Phase 3 ships)
+
+- [ ] Alpaca news-feed integration: pull recent headlines for each candidate, score for institutional-buying mentions.
+- [ ] 13F-freshness flag: if a candidate appears in a 13F filing within the last 90 days, raise its score.
+- [ ] Combine into a composite "I" score; threshold to gate or raise conviction (decide which after looking at noise during paper-validation).
+
+---
+
+## Cross-cutting (not phase-gated)
+
+- [x] **Mac SSH as `mike`:** key already authorized, verified working 2026-05-19.
+- [ ] **Move bot from `User=root` to `User=mike`** in the systemd unit. Do this after Phase 5 (web app) ships and the production layout is finalized, per `CLAUDE.md`.
+- [ ] **Font Awesome Pro v7.2.0 kit:** configure before Phase 5 starts.
+
+---
+
+## Done
+
+Move tasks here as they ship, with date + commit SHA. Pruned periodically.
+
+- 2026-05-17: bot migrated into git, deploy workflow switched to `git -C /root/trading_bot pull && systemctl restart` — commits `bf910ea`..`444e6d6`.
+- 2026-05-17: post-audit cleanup of unused `config.py` keys (`FRACTIONAL_SHARES`, `STOP_LOSS_PCT`, etc. removed) and STOP-latency wording — `444e6d6`.
+
+==================================================================
+FILE: .claude/PLAN.md
+==================================================================
+# Trading Bot — Development Plan
+
+This file holds strategy parameters, signal layers, gate criteria, and Claude's autonomy envelope — the **policy and design** layer.
+
+Sister files:
+- `PHASES.md` — the phase list and purpose of each phase
+- `TASKS.md` — concrete coding tasks for the active phase
+
+Read all three at session start; if anything below contradicts current code, surface it before starting work.
+
+---
+
+## Phase 7 entry criteria (all must be true, evaluated over ≥4 weeks live-paper)
+- Closed trade count: ≥ 30 (for statistical signal)
+- Win rate: ≥ 45%
+- Average winner / average loser: ≥ 2.0
+- Max peak-to-trough drawdown: ≤ 15%
+- Annualised Sharpe (252-day basis): ≥ 1.0
+- No single underlying responsible for > 25% of total loss
+- Audit log: zero unexplained parameter changes (see CLAUDE.md §Audit Trail)
+
+---
+
+## Strategy Parameters
+
+### CAN SLIM Screener
+- Universe: S&P 500 (503 stocks)
+- Scan times: Market open, midday, close (Berlin: 15:30, 18:45, 22:00)
+- Mode: Signals only (no auto-execution yet)
+- Earnings data:
+  - Bot (automated): yfinance (quarterly EPS + revenue, free, no account required); Financial Modeling Prep free tier as fallback
+  - Claude (advisory): Morningstar Investor (paid) via MCP — fair value, moat, star rating, financials; used for signal validation in conversation, not in bot loop
+
+### Entry
+- Cup-with-handle breakout above handle high
+- Volume surge: 1.4–1.5x 50-day average on breakout
+
+### Exit Rules
+- -5% from entry: sell 50%
+- -8% from entry: sell all
+
+### Position Sizing
+- Risk per trade: 1.5% of portfolio (worst case — single gap-down through both exit levels)
+- Formula: (Portfolio × 0.015) / 0.08
+- At $100k: ~$18,750 per position
+- Max concurrent positions: 5 (5 × $18,750 = $93,750 ≤ cash balance, no margin use)
+- Reserve: capacity to add to winners
+- Expected realised risk per trade with staged exit (50% sold at -5%, remainder at -8%): ~1.22% of portfolio
+- Worst-case (rule-of-thumb 1.5%) only applies when both stops fail to trigger separately, e.g. an overnight gap-down. Treat the 1.5% as the planning ceiling, 1.22% as the typical outcome.
+
+### Cup-with-Handle Parameters
+- Cup duration: 7–65 weeks
+- Cup depth: 12–33%
+- Right side within 1–2% of left side high
+- Handle: 5–15% pullback, low volume, upper half of cup
+- Buy point: close above handle high + 40%+ volume surge
+
+---
+
+## Signal Layers
+1. CAN SLIM screener — current coverage: C+A (earnings), L (RS), S (volume), N partial (52-week high)
+   - Gap: I (institutional sponsorship) and M (market direction) not yet implemented
+   - Planned in Phase 3.1: market-regime filter (SPY > 200-day SMA → buys enabled; SPY < 200-day SMA → screener returns watchlist only, no entries). This is the highest-priority addition since unfiltered CAN SLIM has historically blown up in bear markets.
+   - Planned in Phase 3.2: institutional-sponsorship signal via Alpaca news feed + 13F-freshness flag
+2. Cup-with-handle entry trigger
+3. Trump Truth Social / X posts via Alpaca news feed
+4. Congressional trades via Capitol Trades (Trump focus)
+5. Morningstar Investor MCP (paid) — fair value, moat, star rating, C+A confirmation; Claude advisory use only
+
+---
+
+## Claude's Role
+- Advisory and monitoring only
+- Queries Alpaca via MCP on demand
+- Limited autonomous parameter adjustment within the envelope below. All other parameter changes require explicit human approval.
+- Full audit trail of all parameter changes (see CLAUDE.md §Audit Trail)
+- Never executes trades directly
+
+### Autonomous-adjustment envelope
+Claude may add up to **+$5,000** to an existing position when ALL of the following are true:
+- Position is currently ≥ +3% above entry
+- 5-day average volume > 50-day average volume (continued institutional interest)
+- Last daily close above the 21-day SMA
+- No scheduled earnings within next 5 trading days
+- Resulting total notional ≤ max-concurrent cap × per-position size
+- Action is logged to audit trail with all five values that satisfied the rule
+
+---
+
+## Morningstar Access
+- Subscription: Morningstar Investor (paid, individual)
+- Interface: Morningstar MCP (`mcp__claude_ai_Morningstar__authenticate`) — Claude only; bot cannot call MCP tools
+- Coverage relevant to CAN SLIM:
+  - C + A: quarterly/annual EPS and revenue actuals + growth (confirms bot screener output)
+  - Quality overlay: economic moat (Wide/Narrow/None), financial health grade, star rating (1–5) — soft filters
+  - Fair value estimate: context for position sizing and entry timing
+- NOT covered by Investor tier: deep 13F institutional ownership aggregations — Phase 3.2 "I" signal still needs Alpaca news + 13F approach
+
+---
+
+## Web App (Phase 5)
+- Framework: SvelteKit
+- Match watchbill project conventions: `/github/watchbill`
+- Read watchbill repo before scaffolding
+- Hosted on same VPS (Nginx)
+- Build locally, deploy static dist/ to VPS
+- Features: live charts, portfolio, signal feed, bot control panel, audit log
+
+---
+
+## Alerts
+- Email: okipapa@me.com (Phase 3)
+- Telegram: account created, username pending (Phase 6)
+
